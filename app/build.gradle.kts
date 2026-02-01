@@ -11,7 +11,7 @@ import java.util.*
 import java.util.zip.CRC32
 import kotlin.text.RegexOption.IGNORE_CASE
 
-val globalApplicationId = "org.autojs.autojs6"
+val globalApplicationId = "org.autojs.autojs6.plus"
 
 val sign = Sign("$rootDir/sign.properties")
 val versions = Versions("$rootDir/version.properties")

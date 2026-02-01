@@ -41,7 +41,32 @@ jobs:
       - name: Build with Gradle (assembleAppRelease)
         run: ./gradlew assembleAppRelease
 
+      # 签名 APK（如果配置了 Secrets）
+      - name: Sign Release APK
+        if: ${{ secrets.SIGNING_KEY != '' }}
+        uses: r0adkll/sign-android-release@v1
+        id: sign_app
+        with:
+          releaseDirectory: app/build/outputs/apk/app/release
+          signingKeyBase64: ${{ secrets.SIGNING_KEY }}
+          alias: ${{ secrets.ALIAS }}
+          keyStorePassword: ${{ secrets.KEY_STORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+        env:
+          BUILD_TOOLS_VERSION: "34.0.0"
+
+      # 上传签名后的 APK（如果签名成功）
+      - name: Upload Signed APKs
+        if: ${{ steps.sign_app.outcome == 'success' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-release-apks
+          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          retention-days: 30
+
+      # 如果没有签名，上传未签名的 APK
       - name: Upload arm64 artifacts
+        if: ${{ steps.sign_app.outcome != 'success' }}
         id: upload-arm64-apk
         uses: actions/upload-artifact@v4
         with:
@@ -50,6 +75,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload armv7 artifacts
+        if: ${{ steps.sign_app.outcome != 'success' }}
         id: upload-armv7-apk
         uses: actions/upload-artifact@v4
         with:
@@ -58,6 +84,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload universal artifacts
+        if: ${{ steps.sign_app.outcome != 'success' }}
         id: upload-universal-apk
         uses: actions/upload-artifact@v4
         with:
