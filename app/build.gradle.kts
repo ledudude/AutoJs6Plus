@@ -667,6 +667,20 @@ android {
                 keyAlias = sign.properties["keyAlias"] as String
                 storePassword = sign.properties["storePassword"] as String
             }
+        } else {
+             val envKeystoreFile = System.getenv("KEYSTORE_FILE")
+             val envKeyAlias = System.getenv("ALIAS")
+             val envKeyPassword = System.getenv("KEY_PASSWORD")
+             val envStorePassword = System.getenv("KEY_STORE_PASSWORD")
+
+             if (envKeystoreFile != null && envKeyAlias != null && envKeyPassword != null && envStorePassword != null) {
+                 create(buildTypeRelease) {
+                     storeFile = file(envKeystoreFile)
+                     keyAlias = envKeyAlias
+                     keyPassword = envKeyPassword
+                     storePassword = envStorePassword
+                 }
+             }
         }
     }
 

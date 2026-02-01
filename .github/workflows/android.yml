@@ -40,59 +40,25 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Decode Keystore
+        if: env.SIGNING_KEY != ''
+        run: |
+          echo "${{ env.SIGNING_KEY }}" | base64 -d > app/release-key.jks
+
       - name: Build with Gradle (assembleInrtRelease)
         run: ./gradlew assembleInrtRelease
 
       - name: Build with Gradle (assembleAppRelease)
+        env:
+          KEYSTORE_FILE: ${{ github.workspace }}/app/release-key.jks
         run: ./gradlew assembleAppRelease
 
-      # 签名 APK（如果配置了 Secrets）
-      - name: Sign Release APK
-        if: env.SIGNING_KEY != ''
-        uses: r0adkll/sign-android-release@v1
-        id: sign_app
-        with:
-          releaseDirectory: app/build/outputs/apk/app/release
-          signingKeyBase64: ${{ env.SIGNING_KEY }}
-          alias: ${{ env.ALIAS }}
-          keyStorePassword: ${{ env.KEY_STORE_PASSWORD }}
-          keyPassword: ${{ env.KEY_PASSWORD }}
-        env:
-          BUILD_TOOLS_VERSION: "34.0.0"
-
-      # 上传签名后的 APK（如果签名成功）
-      - name: Upload Signed APKs
-        if: ${{ steps.sign_app.outcome == 'success' }}
+      # 上传所有编译生成的 APK (无论是 Release 还是 debug)
+      - name: Upload Release Artifacts
+        if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: signed-release-apks
-          path: ${{ steps.sign_app.outputs.signedReleaseFile }}
+          name: release-apks
+          path: app/build/outputs/apk/app/release/*.apk
           retention-days: 30
 
-      # 如果没有签名，上传未签名的 APK
-      - name: Upload arm64 artifacts
-        if: ${{ steps.sign_app.outcome != 'success' }}
-        id: upload-arm64-apk
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-arm64-apk
-          path: app/build/outputs/apk/app/release/*-arm64-v8a.apk
-        continue-on-error: true
-
-      - name: Upload armv7 artifacts
-        if: ${{ steps.sign_app.outcome != 'success' }}
-        id: upload-armv7-apk
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-armv7-apk
-          path: app/build/outputs/apk/app/release/*-v7a.apk
-        continue-on-error: true
-
-      - name: Upload universal artifacts
-        if: ${{ steps.sign_app.outcome != 'success' }}
-        id: upload-universal-apk
-        uses: actions/upload-artifact@v4
-        with:
-          name: release-universal-apk
-          path: app/build/outputs/apk/app/release/*-universal.apk
-        continue-on-error: true
