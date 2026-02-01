@@ -86,7 +86,22 @@ public class DevPluginResponseHandler implements Handler {
                             return true;
                         })
                         .handler("save_project", data -> {
-                            saveProject(data.get("name").getAsString(), data.get("dir").getAsString());
+                            JsonObject dataObj = data.get("data").getAsJsonObject();
+                            String name = dataObj.get("name").getAsString();
+                            String dir = dataObj.get("dir").getAsString();
+                            boolean override = dataObj.has("override") && dataObj.get("override").getAsBoolean();
+                            
+                            // 读取删除文件列表
+                            String[] deletedFiles = new String[0];
+                            if (dataObj.has("deletedFiles") && dataObj.get("deletedFiles").isJsonArray()) {
+                                var deletedFilesArray = dataObj.get("deletedFiles").getAsJsonArray();
+                                deletedFiles = new String[deletedFilesArray.size()];
+                                for (int i = 0; i < deletedFilesArray.size(); i++) {
+                                    deletedFiles[i] = deletedFilesArray.get(i).getAsString();
+                                }
+                            }
+                            
+                            saveProject(name, dir, deletedFiles, override);
                             return true;
                         }));
     }
@@ -182,7 +197,7 @@ public class DevPluginResponseHandler implements Handler {
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @SuppressLint("CheckResult")
-    private void saveProject(String name, String dir) {
+    private void saveProject(String name, String dir, String[] deletedFiles, boolean override) {
         if (TextUtils.isEmpty(name)) {
             name = getUntitledTitle();
         }
@@ -192,7 +207,41 @@ public class DevPluginResponseHandler implements Handler {
 
         Observable
                 .fromCallable(() -> {
+                    // 如果是完全覆盖模式，先删除目标目录
+                    if (override && toDir.exists()) {
+                        PFiles.deleteFilesOfDir(toDir);
+                    }
+                    
+                    // 复制文件
                     copyDir(new File(dir), toDir);
+                    
+                    // 处理删除文件列表
+                    if (deletedFiles != null && deletedFiles.length > 0) {
+                        for (String deletedFile : deletedFiles) {
+                            File fileToDelete = new File(toDir, deletedFile);
+                            if (fileToDelete.exists()) {
+                                if (fileToDelete.isDirectory()) {
+                                    PFiles.deleteFilesOfDir(fileToDelete);
+                                    fileToDelete.delete();
+                                } else {
+                                    fileToDelete.delete();
+                                }
+                                
+                                // 删除空的父目录
+                                File parent = fileToDelete.getParentFile();
+                                while (parent != null && !parent.equals(toDir)) {
+                                    File[] files = parent.listFiles();
+                                    if (files == null || files.length == 0) {
+                                        parent.delete();
+                                        parent = parent.getParentFile();
+                                    } else {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
                     return toDir.getPath();
                 })
                 .subscribeOn(Schedulers.io())
