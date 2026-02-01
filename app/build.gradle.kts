@@ -11,7 +11,7 @@ import java.util.*
 import java.util.zip.CRC32
 import kotlin.text.RegexOption.IGNORE_CASE
 
-val globalApplicationId = "org.autojs.autojs6.plus"
+val globalApplicationId = "org.autojs.autojs6"
 
 val sign = Sign("$rootDir/sign.properties")
 val versions = Versions("$rootDir/version.properties")
@@ -430,7 +430,7 @@ android {
     compileSdk = versions.sdkVersionCompile
 
     defaultConfig {
-        applicationId = applicationId
+        applicationId = "org.autojs.autojs6.plus"
 
         minSdk = versions.sdkVersionMin
         targetSdk = versions.sdkVersionTarget
