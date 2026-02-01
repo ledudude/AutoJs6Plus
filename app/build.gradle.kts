@@ -472,7 +472,7 @@ android {
                     "appName" to "@string/app_name",
                     "intentCategory" to "android.intent.category.LAUNCHER",
                     "intentCategoryInrt" to "android.intent.category.DEFAULT",
-                    "authorities" to "org.autojs.autojs6.fileprovider",
+                    "authorities" to "org.autojs.autojs6.plus.fileprovider",
                     "icon" to "@drawable/autojs6_material",
                 )
             )
@@ -689,9 +689,7 @@ android {
             getDefaultProguardFile("proguard-android.txt"),
             "proguard-rules.pro",
         )
-        val niceSigningConfig = takeIf { sign.isValid }?.let {
-            signingConfigs.getByName(buildTypeRelease)
-        }
+        val niceSigningConfig = signingConfigs.findByName(buildTypeRelease)
         debug {
             isMinifyEnabled = getByName(buildTypeRelease).isMinifyEnabled
             proguardFiles(*proguardFiles)

@@ -53,12 +53,28 @@ jobs:
           KEYSTORE_FILE: ${{ github.workspace }}/app/release-key.jks
         run: ./gradlew assembleAppRelease
 
-      # 上传所有编译生成的 APK (无论是 Release 还是 debug)
-      - name: Upload Release Artifacts
+      # 分别上传不同架构的 APK
+      - name: Upload Release Artifacts (Universal)
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: release-apks
-          path: app/build/outputs/apk/app/release/*.apk
+          name: release-universal-apk
+          path: app/build/outputs/apk/app/release/*-universal.apk
+          retention-days: 30
+
+      - name: Upload Release Artifacts (Arm64)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-arm64-v8a-apk
+          path: app/build/outputs/apk/app/release/*-arm64-v8a.apk
+          retention-days: 30
+
+      - name: Upload Release Artifacts (Armv7)
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-armeabi-v7a-apk
+          path: app/build/outputs/apk/app/release/*-armeabi-v7a.apk
           retention-days: 30
 
